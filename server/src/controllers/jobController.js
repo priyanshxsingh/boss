@@ -138,3 +138,32 @@ export const getJobById = async (req, res) => {
     });
   }
 };
+
+
+
+export const getMyWork = async (req, res) => {
+  try {
+    // Inspect jobs that are already in progress or completed.
+
+    const jobs = await Job.find({
+      hiredHunter: req.user.userId,
+      status: { $in: ["in-progress", "completed"] },
+    })
+      .populate("provider", "name avatar")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+
+    return res.status(200).json({
+      success: true,
+      count: jobs.length,
+      jobs,
+    });
+  } catch (error) {
+    console.error("Get my work error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch your work",
+    });
+  }
+};

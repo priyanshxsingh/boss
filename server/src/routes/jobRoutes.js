@@ -1,12 +1,19 @@
-
 import express from "express";
-import { createJob, getJobs, getMyJobs, getJobById } from "../controllers/jobController.js";
+import {
+  createJob,
+  getJobs,
+  getMyJobs,
+  getJobById,
+  getMyWork,
+} from "../controllers/jobController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
+
+router.get("/my-work", authorize("hunter"), getMyWork);
 
 // Hunters browse available jobs
 router.get("/", getJobs);

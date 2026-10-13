@@ -30,6 +30,7 @@ const features = [
     title: "My Work",
     description: "View jobs you've been hired to complete.",
     icon: Clock,
+    action: "/dashboard/my-work",
   },
   {
     title: "My Profile",

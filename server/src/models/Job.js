@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const jobSchema = new mongoose.Schema(
@@ -68,10 +67,16 @@ const jobSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+
+    hiredHunter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 jobSchema.index({ status: 1, createdAt: -1 });

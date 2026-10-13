@@ -223,3 +223,80 @@ export const updateApplicationStatus = async (req, res) => {
     });
   }
 };
+
+
+export const hireApplicant = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid application ID",
+      });
+    }
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    // Confirm that this application belongs to a job owned by this Provider.
+    const job = await Job.findOne({
+      _id: application.job,
+      provider: req.user.userId,
+    });
+
+    if (!job) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot hire for this job",
+      });
+    }
+
+    if (application.status !== "accepted") {
+      return res.status(400).json({
+        success: false,
+        message: "Only accepted applications can be hired",
+      });
+    }
+
+    if (job.status !== "open") {
+      return res.status(409).json({
+        success: false,
+        message: "This job is no longer available for hiring",
+      });
+    }
+
+    // Change the job's status to indicate that work can begin.
+    job.hiredHunter = application.hunter;
+    job.status = "in-progress";
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Hunter hired successfully",
+      job: {
+        _id: job._id,
+        title: job.title,
+        status: job.status,
+      },
+      application: {
+        _id: application._id,
+        hunter: application.hunter,
+        status: application.status,
+      },
+    });
+  } catch (error) {
+    console.error("Hire applicant error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to hire applicant",
+    });
+  }
+};

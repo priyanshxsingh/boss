@@ -13,6 +13,7 @@ function ReviewApplicants() {
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
+  const [hiringId, setHiringId] = useState(null);
 
   const fetchJobs = async () => {
     try {
@@ -88,6 +89,30 @@ function ReviewApplicants() {
     }
   };
 
+  const handleHire = async (applicationId) => {
+    const confirmed = window.confirm(
+      "Hire this Hunter? The job will be marked as in progress.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setHiringId(applicationId);
+      setError("");
+
+      await api.patch(`/applications/${applicationId}/hire`);
+
+      await fetchApplicants(selectedJob);
+      await fetchJobs();
+
+      window.alert("Hunter hired successfully!");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to hire this Hunter.");
+    } finally {
+      setHiringId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white px-4 py-8 text-black sm:px-8">
       <div className="mx-auto max-w-5xl">
@@ -148,7 +173,7 @@ function ReviewApplicants() {
               <option value="">Choose a job...</option>
               {jobs.map((job) => (
                 <option key={job._id} value={job._id}>
-                  {job.title}
+                  {job.title} — {job.status}
                 </option>
               ))}
             </select>
@@ -218,17 +243,19 @@ function ReviewApplicants() {
                         </div>
                       </div>
 
-                      <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold capitalize">
-                        {application.status}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold capitalize">
+                          {application.status}
+                        </span>
 
                         {application.status === "pending" && (
-                          <div className="flex flex-wrap items-center gap-3">
+                          <>
                             <button
                               onClick={() =>
                                 handleUpdateStatus(application._id, "accepted")
                               }
                               disabled={updatingId === application._id}
-                              className="inline-flex min-w-28 items-center justify-center rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black shadow-sm transition-all duration-200 hover:bg-yellow-500 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex items-center justify-center rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black transition hover:bg-yellow-500 disabled:opacity-50"
                             >
                               {updatingId === application._id
                                 ? "Updating..."
@@ -240,15 +267,35 @@ function ReviewApplicants() {
                                 handleUpdateStatus(application._id, "rejected")
                               }
                               disabled={updatingId === application._id}
-                              className="inline-flex min-w-28 items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 transition-all duration-200 hover:border-red-300 hover:bg-red-50 hover:text-red-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
                             >
                               {updatingId === application._id
                                 ? "Updating..."
                                 : "✕ Reject"}
                             </button>
-                          </div>
+                          </>
                         )}
-                      </span>
+
+                        {application.status === "accepted" &&
+                          selectedJobDetails?.status === "open" && (
+                            <button
+                              onClick={() => handleHire(application._id)}
+                              disabled={hiringId === application._id}
+                              className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800 disabled:opacity-50"
+                            >
+                              {hiringId === application._id
+                                ? "Hiring..."
+                                : "Hire Hunter"}
+                            </button>
+                          )}
+
+                        {application.status === "accepted" &&
+                          selectedJobDetails?.status === "in-progress" && (
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
+                              Job in progress
+                            </span>
+                          )}
+                      </div>
                     </div>
 
                     {application.hunter?.bio && (

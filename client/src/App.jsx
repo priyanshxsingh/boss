@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import MyWork from "./pages/MyWork";
 import PostJob from "./pages/PostJob";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -103,6 +104,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["provider"]}>
             <ReviewApplicants />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/my-work"
+        element={
+          <ProtectedRoute allowedRoles={["hunter"]}>
+            <MyWork />
           </ProtectedRoute>
         }
       />
