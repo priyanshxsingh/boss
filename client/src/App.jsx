@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import JobDetails from "./pages/JobDetails";
 import ManageJobs from "./pages/ManageJobs";
 import BrowseJobs from "./pages/BrowseJobs";
+import MyApplications from "./pages/MyApplications";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -83,6 +84,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["hunter"]}>
             <JobDetails />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/my-applications"
+        element={
+          <ProtectedRoute allowedRoles={["hunter"]}>
+            <MyApplications />
           </ProtectedRoute>
         }
       />

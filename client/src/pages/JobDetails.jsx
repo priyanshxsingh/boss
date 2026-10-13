@@ -8,6 +8,7 @@ import {
   IndianRupee,
   UserRound,
   Clock,
+  Send,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -20,6 +21,12 @@ export default function JobDetails() {
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [coverLetter, setCoverLetter] = useState("");
+  const [experience, setExperience] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [applicationMessage, setApplicationMessage] = useState("");
+  const [applicationError, setApplicationError] = useState("");
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -41,6 +48,53 @@ export default function JobDetails() {
 
     fetchJob();
   }, [id]);
+
+  const handleApply = async (event) => {
+    event.preventDefault();
+
+    setApplicationMessage("");
+    setApplicationError("");
+
+    if (coverLetter.trim().length < 20) {
+      setApplicationError(
+        "Your cover letter must contain at least 20 characters.",
+      );
+      return;
+    }
+
+    if (coverLetter.trim().length > 2000) {
+      setApplicationError("Your cover letter cannot exceed 2000 characters.");
+      return;
+    }
+
+    if (experience.trim().length > 1000) {
+      setApplicationError("Experience cannot exceed 1000 characters.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const response = await api.post(`/applications/jobs/${id}`, {
+        coverLetter: coverLetter.trim(),
+        experience: experience.trim(),
+      });
+
+      setApplicationMessage(
+        response.data.message || "Application submitted successfully!",
+      );
+
+      setCoverLetter("");
+      setExperience("");
+    } catch (err) {
+      setApplicationError(
+        err.response?.data?.message ||
+          "Unable to submit your application. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const formatDate = (date) => {
     if (!date) return "Recently posted";
@@ -235,12 +289,96 @@ export default function JobDetails() {
               </div>
 
               <div className="mt-6 rounded-xl bg-yellow-50 p-4">
-                <p className="text-sm font-bold text-gray-900">
-                  Interested in this opportunity?
-                </p>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Apply for this job
+                </h3>
+
                 <p className="mt-1 text-xs leading-5 text-gray-600">
-                  The application feature is coming next.
+                  Tell the Provider why you are suitable for this opportunity.
                 </p>
+
+                {applicationMessage && (
+                  <div
+                    role="status"
+                    className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800"
+                  >
+                    <CheckCircle2 size={17} className="mr-2 inline" />
+                    {applicationMessage}
+                  </div>
+                )}
+
+                {applicationError && (
+                  <div
+                    role="alert"
+                    className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+                  >
+                    {applicationError}
+                  </div>
+                )}
+
+                <form onSubmit={handleApply} className="mt-4 space-y-4">
+                  <div>
+                    <label
+                      htmlFor="coverLetter"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Cover letter <span className="text-red-500">*</span>
+                    </label>
+
+                    <textarea
+                      id="coverLetter"
+                      value={coverLetter}
+                      onChange={(event) => setCoverLetter(event.target.value)}
+                      placeholder="Introduce yourself and explain why you're a good fit..."
+                      rows={5}
+                      minLength={20}
+                      maxLength={2000}
+                      required
+                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                    />
+
+                    <p className="mt-1 text-right text-xs text-gray-500">
+                      {coverLetter.length}/2000 characters
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="experience"
+                      className="mb-2 block text-sm font-semibold text-gray-800"
+                    >
+                      Relevant experience
+                    </label>
+
+                    <textarea
+                      id="experience"
+                      value={experience}
+                      onChange={(event) => setExperience(event.target.value)}
+                      placeholder="Describe your relevant skills or experience (optional)"
+                      rows={3}
+                      maxLength={1000}
+                      className="w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-950 px-4 py-3 font-bold text-white transition hover:bg-yellow-400 hover:text-gray-950 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {submitting ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={17} />
+                        Submit Application
+                      </>
+                    )}
+                  </button>
+                </form>
               </div>
             </section>
 

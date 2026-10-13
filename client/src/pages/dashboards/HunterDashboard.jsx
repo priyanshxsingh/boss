@@ -24,6 +24,7 @@ const features = [
     title: "My Applications",
     description: "Track applications and check whether you've been selected.",
     icon: ClipboardList,
+    action: "/dashboard/my-applications",
   },
   {
     title: "My Work",
