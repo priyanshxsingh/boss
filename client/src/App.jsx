@@ -4,7 +4,9 @@ import Login from "./pages/Login";
 import PostJob from "./pages/PostJob";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import JobDetails from "./pages/JobDetails";
 import ManageJobs from "./pages/ManageJobs";
+import BrowseJobs from "./pages/BrowseJobs";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -63,6 +65,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["provider"]}>
             <ManageJobs />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/browse-jobs"
+        element={
+          <ProtectedRoute allowedRoles={["hunter"]}>
+            <BrowseJobs />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/jobs/:id"
+        element={
+          <ProtectedRoute allowedRoles={["hunter"]}>
+            <JobDetails />
           </ProtectedRoute>
         }
       />

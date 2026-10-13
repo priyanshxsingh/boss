@@ -99,3 +99,42 @@ export const getMyJobs = async (req, res) => {
     });
   }
 };
+
+export const getJobById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!/^[a-f\d]{24}$/i.test(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job ID",
+      });
+    }
+
+    const job = await Job.findOne({
+      _id: id,
+      status: "open",
+    })
+      .populate("provider", "name avatar bio location")
+      .lean();
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found or no longer available",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      job,
+    });
+  } catch (error) {
+    console.error("Get job details error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch job details",
+    });
+  }
+};
