@@ -7,17 +7,20 @@ import {
   Search,
   UserRound,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const features = [
   {
     title: "Post a Job",
     description: "Publish a job or work opportunity for Hunters.",
     icon: PlusCircle,
+    action: "/dashboard/post-job",
   },
   {
     title: "Manage My Jobs",
     description: "View, edit, and manage the jobs you've posted.",
     icon: BriefcaseBusiness,
+    action: "/dashboard/manage-jobs",
   },
   {
     title: "Review Applicants",
@@ -42,6 +45,8 @@ const features = [
 ];
 
 export default function ProviderDashboard() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-8">
       <section>
@@ -64,9 +69,20 @@ export default function ProviderDashboard() {
           const Icon = feature.icon;
 
           return (
-            <div
+            <button
               key={feature.title}
-              className="rounded-2xl border border-yellow-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+              type="button"
+              onClick={() => {
+                if (feature.action) {
+                  navigate(feature.action);
+                }
+              }}
+              disabled={!feature.action}
+              className={`rounded-2xl border border-yellow-100 bg-white p-6 text-left shadow-sm transition ${
+                feature.action
+                  ? "cursor-pointer hover:-translate-y-1 hover:border-yellow-300 hover:shadow-md"
+                  : "cursor-not-allowed opacity-80"
+              }`}
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-yellow-100 text-yellow-700">
                 <Icon size={24} />
@@ -79,7 +95,7 @@ export default function ProviderDashboard() {
               <p className="mt-2 text-sm leading-6 text-gray-600">
                 {feature.description}
               </p>
-            </div>
+            </button>
           );
         })}
       </section>

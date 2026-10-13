@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import PostJob from "./pages/PostJob";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import ManageJobs from "./pages/ManageJobs";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -53,6 +54,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["provider"]}>
             <PostJob />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/manage-jobs"
+        element={
+          <ProtectedRoute allowedRoles={["provider"]}>
+            <ManageJobs />
           </ProtectedRoute>
         }
       />
