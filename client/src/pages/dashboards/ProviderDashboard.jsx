@@ -26,6 +26,7 @@ const features = [
     title: "Review Applicants",
     description: "Review applications from Hunters and find the right person.",
     icon: Users,
+    action: "/dashboard/review-applicants",
   },
   {
     title: "Hire a Hunter",

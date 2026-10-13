@@ -8,6 +8,7 @@ import JobDetails from "./pages/JobDetails";
 import ManageJobs from "./pages/ManageJobs";
 import BrowseJobs from "./pages/BrowseJobs";
 import MyApplications from "./pages/MyApplications";
+import ReviewApplicants from "./pages/ReviewApplicants";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -93,6 +94,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["hunter"]}>
             <MyApplications />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/review-applicants"
+        element={
+          <ProtectedRoute allowedRoles={["provider"]}>
+            <ReviewApplicants />
           </ProtectedRoute>
         }
       />
