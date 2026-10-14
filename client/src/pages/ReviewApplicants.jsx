@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, RefreshCw, Users, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  RefreshCw,
+  Users,
+  UserRound,
+  CheckCircle,
+  ClipboardCheck,
+  ExternalLink,
+} from "lucide-react";
 import api from "../lib/api";
 
 function ReviewApplicants() {
@@ -14,6 +22,8 @@ function ReviewApplicants() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
   const [hiringId, setHiringId] = useState(null);
+  const [completing, setCompleting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const fetchJobs = async () => {
     try {
@@ -41,7 +51,9 @@ function ReviewApplicants() {
       setLoadingApplicants(true);
       setError("");
 
-      const response = await api.get(`/applications/jobs/${jobId}/applicants`);
+      const response = await api.get(
+        `/applications/jobs/${jobId}/applicants`
+      );
 
       setApplications(response.data.applications ?? []);
     } catch (err) {
@@ -58,6 +70,7 @@ function ReviewApplicants() {
 
   useEffect(() => {
     fetchApplicants(selectedJob);
+    setSuccessMessage("");
   }, [selectedJob]);
 
   const selectedJobDetails = jobs.find((job) => job._id === selectedJob);
@@ -65,24 +78,20 @@ function ReviewApplicants() {
   const handleUpdateStatus = async (applicationId, status) => {
     const action = status === "accepted" ? "accept" : "reject";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} this application?`,
-    );
-
-    if (!confirmed) return;
+    if (!window.confirm(`Are you sure you want to ${action} this application?`)) {
+      return;
+    }
 
     try {
       setUpdatingId(applicationId);
       setError("");
 
-      await api.patch(`/applications/${applicationId}/status`, {
-        status,
-      });
+      await api.patch(`/applications/${applicationId}/status`, { status });
 
       await fetchApplicants(selectedJob);
     } catch (err) {
       setError(
-        err.response?.data?.message || "Failed to update application status.",
+        err.response?.data?.message || "Failed to update application status."
       );
     } finally {
       setUpdatingId(null);
@@ -90,11 +99,13 @@ function ReviewApplicants() {
   };
 
   const handleHire = async (applicationId) => {
-    const confirmed = window.confirm(
-      "Hire this Hunter? The job will be marked as in progress.",
-    );
-
-    if (!confirmed) return;
+    if (
+      !window.confirm(
+        "Hire this Hunter? The job will be marked as in progress."
+      )
+    ) {
+      return;
+    }
 
     try {
       setHiringId(applicationId);
@@ -112,6 +123,49 @@ function ReviewApplicants() {
       setHiringId(null);
     }
   };
+
+  const handleConfirmCompletion = async () => {
+    if (!selectedJob) return;
+
+    if (
+      !window.confirm(
+        "Confirm that you have reviewed the submitted work and it is complete?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setCompleting(true);
+      setError("");
+      setSuccessMessage("");
+
+      const response = await api.patch(
+        `/applications/jobs/${selectedJob}/confirm-completion`
+      );
+
+      setJobs((previousJobs) =>
+        previousJobs.map((job) =>
+          job._id === selectedJob
+            ? { ...job, status: response.data.job.status }
+            : job
+        )
+      );
+
+      setSuccessMessage("Work confirmed! This job is now completed.");
+      await fetchApplicants(selectedJob);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to confirm work completion."
+      );
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const hasSubmission = Boolean(
+    selectedJobDetails?.workSubmission?.trim()
+  );
 
   return (
     <div className="min-h-screen bg-white px-4 py-8 text-black sm:px-8">
@@ -133,14 +187,15 @@ function ReviewApplicants() {
               Review Applicants
             </h1>
             <p className="mt-2 text-gray-600">
-              Find and review people who applied to your jobs.
+              Review applicants, inspect submitted work, and manage completion.
             </p>
           </div>
 
           <button
-            onClick={() =>
-              selectedJob ? fetchApplicants(selectedJob) : fetchJobs()
-            }
+            onClick={async () => {
+              await fetchJobs();
+              if (selectedJob) await fetchApplicants(selectedJob);
+            }}
             className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 font-semibold hover:bg-gray-100"
           >
             <RefreshCw size={16} />
@@ -151,6 +206,13 @@ function ReviewApplicants() {
         {error && (
           <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            <CheckCircle size={18} />
+            {successMessage}
           </div>
         )}
 
@@ -179,6 +241,67 @@ function ReviewApplicants() {
             </select>
           )}
         </section>
+
+        {selectedJob && selectedJobDetails && (
+          <section className="mt-6 rounded-2xl border border-gray-200 p-5 shadow-sm sm:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="rounded-xl bg-yellow-100 p-3">
+                <ClipboardCheck size={23} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Work Submission</h2>
+                <p className="text-sm text-gray-500">
+                  {selectedJobDetails.title}
+                </p>
+              </div>
+            </div>
+
+            {selectedJobDetails.status === "completed" ? (
+              <div className="flex items-center gap-2 rounded-xl bg-green-50 p-4 text-sm font-medium text-green-800">
+                <CheckCircle size={20} />
+                This job has been marked as completed.
+              </div>
+            ) : selectedJobDetails.status !== "in-progress" ? (
+              <p className="text-sm text-gray-600">
+                Work submissions become available after you hire a Hunter.
+              </p>
+            ) : !hasSubmission ? (
+              <p className="rounded-xl bg-yellow-50 p-4 text-sm text-yellow-800">
+                The Hunter hasn't submitted their work yet. Refresh this page
+                after they submit it.
+              </p>
+            ) : (
+              <>
+                <div className="whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-800">
+                  {selectedJobDetails.workSubmission}
+                </div>
+
+                {/^https?:\/\/\S+$/i.test(
+                  selectedJobDetails.workSubmission.trim()
+                ) && (
+                  <a
+                    href={selectedJobDetails.workSubmission.trim()}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"
+                  >
+                    Open submitted link
+                    <ExternalLink size={15} />
+                  </a>
+                )}
+
+                <button
+                  onClick={handleConfirmCompletion}
+                  disabled={completing}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  <CheckCircle size={18} />
+                  {completing ? "Confirming..." : "Confirm Completion"}
+                </button>
+              </>
+            )}
+          </section>
+        )}
 
         {selectedJob && (
           <div className="mt-8">
@@ -237,7 +360,7 @@ function ReviewApplicants() {
                           <p className="text-sm text-gray-500">
                             Applied{" "}
                             {new Date(
-                              application.createdAt,
+                              application.createdAt
                             ).toLocaleDateString()}
                           </p>
                         </div>

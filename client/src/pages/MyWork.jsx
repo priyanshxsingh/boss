@@ -1,26 +1,78 @@
 import { useEffect, useState } from "react";
-import { BriefcaseBusiness, Clock, CheckCircle, MapPin, AlertCircle } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Clock,
+  CheckCircle,
+  MapPin,
+  AlertCircle,
+  Send,
+} from "lucide-react";
 import api from "../lib/api";
 
 function MyWork() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submissions, setSubmissions] = useState({});
+  const [submittingId, setSubmittingId] = useState(null);
+  const [successMessages, setSuccessMessages] = useState({});
+
+  const fetchMyWork = async () => {
+    try {
+      const response = await api.get("/jobs/my-work");
+      setJobs(response.data.jobs ?? []);
+      setError("");
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to load your work."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchMyWork = async () => {
-      try {
-        const response = await api.get("/jobs/my-work");
-        setJobs(response.data.jobs ?? []);
-      } catch (err) {
-        setError(err.response?.data?.message || "Failed to load your work.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMyWork();
   }, []);
+
+  const handleSubmitWork = async (jobId) => {
+    const workSubmission = submissions[jobId]?.trim();
+
+    if (!workSubmission) {
+      setError("Please enter a work description or project link.");
+      return;
+    }
+
+    setError("");
+    setSuccessMessages((prev) => ({ ...prev, [jobId]: "" }));
+    setSubmittingId(jobId);
+
+    try {
+      const response = await api.patch(
+        `/applications/jobs/${jobId}/submit-work`,
+        { workSubmission }
+      );
+
+      setJobs((prevJobs) =>
+        prevJobs.map((job) =>
+          job._id === jobId
+            ? { ...job, workSubmission: response.data.job.workSubmission }
+            : job
+        )
+      );
+
+      setSuccessMessages((prev) => ({
+        ...prev,
+        [jobId]: "Work submitted successfully!",
+      }));
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to submit your work."
+      );
+    } finally {
+      setSubmittingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -30,7 +82,7 @@ function MyWork() {
     );
   }
 
-  if (error) {
+  if (error && jobs.length === 0) {
     return (
       <div className="mx-auto max-w-5xl p-6">
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
@@ -51,9 +103,16 @@ function MyWork() {
           My Work
         </h1>
         <p className="mt-2 text-gray-600">
-          Track the jobs you've been hired for.
+          Track your assigned jobs and submit completed work.
         </p>
       </div>
+
+      {error && (
+        <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <AlertCircle size={20} />
+          {error}
+        </div>
+      )}
 
       {jobs.length === 0 ? (
         <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
@@ -121,6 +180,68 @@ function MyWork() {
                   </span>
                 </div>
               </div>
+
+              {job.status === "in-progress" && (
+                <div className="mt-6 border-t border-gray-100 pt-5">
+                  <label
+                    htmlFor={`submission-${job._id}`}
+                    className="mb-2 block text-sm font-semibold text-gray-900"
+                  >
+                    Submit your completed work
+                  </label>
+
+                  <textarea
+                    id={`submission-${job._id}`}
+                    value={submissions[job._id] ?? job.workSubmission ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSubmissions((prev) => ({
+                        ...prev,
+                        [job._id]: value,
+                      }));
+                    }}
+                    maxLength={3000}
+                    rows={4}
+                    placeholder="Describe your work or paste your project link..."
+                    className="w-full rounded-xl border border-gray-300 p-3 text-sm outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-100"
+                  />
+
+                  <div className="mt-2 flex justify-between text-xs text-gray-500">
+                    <span>Maximum 3000 characters</span>
+                    <span>
+                      {(submissions[job._id] ?? job.workSubmission ?? "").length}/3000
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitWork(job._id)}
+                    disabled={submittingId === job._id}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-3 font-semibold text-gray-900 transition hover:bg-yellow-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Send size={17} />
+                    {submittingId === job._id
+                      ? "Submitting..."
+                      : job.workSubmission
+                        ? "Update Submission"
+                        : "Submit Work"}
+                  </button>
+
+                  {successMessages[job._id] && (
+                    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-green-700">
+                      <CheckCircle size={17} />
+                      {successMessages[job._id]}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {job.status === "completed" && (
+                <div className="mt-5 flex items-center gap-2 rounded-xl bg-green-50 p-3 text-sm font-medium text-green-700">
+                  <CheckCircle size={18} />
+                  This work has been marked as completed.
+                </div>
+              )}
             </article>
           ))}
         </div>

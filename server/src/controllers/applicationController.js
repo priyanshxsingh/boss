@@ -300,3 +300,114 @@ export const hireApplicant = async (req, res) => {
     });
   }
 };
+
+
+export const submitWork = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    const { workSubmission } = req.body;
+
+    if (
+      typeof workSubmission !== "string" ||
+      !workSubmission.trim() ||
+      workSubmission.trim().length > 3000
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide a work description or link (maximum 3000 characters)",
+      });
+    }
+
+    const job = await Job.findById(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    if (String(job.hiredHunter) !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the hired Hunter can submit this work",
+      });
+    }
+
+    if (job.status !== "in-progress") {
+      return res.status(400).json({
+        success: false,
+        message: "Only work in progress can be submitted",
+      });
+    }
+
+    job.workSubmission = workSubmission.trim();
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Work submitted successfully",
+      job,
+    });
+  } catch (error) {
+    console.error("Submit work error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit work",
+    });
+  }
+};
+
+
+export const confirmWorkCompletion = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await Job.findById(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    if (String(job.provider) !== req.user.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only the job's Provider can confirm completion",
+      });
+    }
+
+    if (job.status !== "in-progress") {
+      return res.status(400).json({
+        success: false,
+        message: "This job is not in progress",
+      });
+    }
+
+    if (!job.workSubmission?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "The Hunter has not submitted their work yet",
+      });
+    }
+
+    job.status = "completed";
+    await job.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Work marked as completed",
+      job,
+    });
+  } catch (error) {
+    console.error("Confirm completion error:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to confirm completion",
+    });
+  }
+};

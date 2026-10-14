@@ -73,6 +73,13 @@ const jobSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+
+    workSubmission: {
+      type: String,
+      trim: true,
+      maxlength: 3000,
+      default: "",
+    },
   },
   {
     timestamps: true,
